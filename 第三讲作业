@@ -1,0 +1,34 @@
+float colSize ;
+float rowSize ;
+color[] colors = {#60918F, #C5B79F,  #AB7462, #313441, #7C7665};
+
+void setup() {
+  size(500,500);
+  background(0);
+  frameRate(1);
+  mondrian(); 
+}
+
+void mondrian() {
+  for(int line = 0; line < height; line += colSize + 3) {
+    colSize = random(4, width/3);
+    for(int col = 0; col < width; col += rowSize + 3) {
+      rowSize = random(4, height/2);
+
+      color rectColor = colors[int(random(colors.length))];
+      fill(rectColor);
+      rect(col, line, rowSize, colSize);
+
+      strokeWeight(3);
+      stroke(0);
+      float x = col+rowSize;
+      float y = line+colSize;
+      line(0, y, width, y);
+      line(x, line, x, y);
+    }
+  }
+}
+
+void draw() {
+        mondrian();
+  }
