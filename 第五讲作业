@@ -11,7 +11,6 @@ float twistPhaseStart=0;
 float[] sectionR = new float[heightSection+1];
 float[] sectionTwistPhase = new float[heightSection+1];
 
-//boolean displayMesh = false;
 boolean record; 
 
 void setup(){
@@ -84,5 +83,76 @@ void drawCylinder() {
 void keyPressed(){
   if(key=='s'){
     record=true;
+  }
+}
+
+import controlP5.*;
+import peasy.*;
+
+ControlP5 slider;
+PeasyCam cam;
+
+void UI(){
+  int sliderWidth=200;
+  int sliderHeight=40;
+  
+  cam=new PeasyCam(this,800);
+  
+  slider=new ControlP5(this,createFont("微软雅黑",14));
+  
+  slider.addSlider("layerHeight")
+  .setPosition(20,80)
+  .setSize(sliderWidth,sliderHeight)
+  .setRange(20,100)
+  .setValue(50)
+  .setLabel("每层高度");
+  
+  slider.addSlider("sectionSideNum")
+  .setPosition(20,140)
+  .setSize(sliderWidth,sliderHeight)
+  .setRange(3,12)
+  .setValue(5)
+  .setLabel("断面边数");
+  
+  slider.addSlider("sideDivision")
+  .setPosition(20,200)
+  .setSize(sliderWidth,sliderHeight)
+  .setRange(3,50)
+  .setValue(20)
+  .setLabel("断面边细分段数");
+  
+  slider.addSlider("sectionRadiusPhase")
+  .setPosition(20,260)
+  .setSize(sliderWidth,sliderHeight)
+  .setRange(0,PI*4)
+  .setValue(PI/2)
+  .setLabel("半径相变");
+  
+  slider.addSlider("twistPhase")
+  .setPosition(20,320)
+  .setSize(sliderWidth,sliderHeight)
+  .setRange(-TWO_PI,TWO_PI)
+  .setValue(0)
+  .setLabel("扭曲相变");;
+  
+  slider.addSlider("twistPhaseStart")
+  .setPosition(20,380)
+  .setSize(sliderWidth,sliderHeight)
+  .setRange(-TWO_PI,TWO_PI)
+  .setValue(0)
+  .setLabel("扭曲相变起始");;
+  
+  slider.setAutoDraw(false);
+}
+
+void UIShow() {
+  cam.beginHUD();  
+  slider.draw();
+  cam.endHUD();
+
+  if (mouseX<400 && mouseY< height) {
+    cam.setActive(false);
+  } else {
+    cam.setActive(true);
   }
 }
