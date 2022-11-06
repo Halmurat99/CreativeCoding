@@ -1,0 +1,88 @@
+import processing.dxf.*;
+
+int heightSection=5;
+float layerHeight=50;
+int sectionSideNum=5;
+int sideDivision=20;
+float sectionRadiusPhase=PI/2;
+float twistPhase=0;
+float twistPhaseStart=0;
+
+float[] sectionR = new float[heightSection+1];
+float[] sectionTwistPhase = new float[heightSection+1];
+
+//boolean displayMesh = false;
+boolean record; 
+
+void setup(){
+  size(1000,800,P3D);
+  surface.setLocation(50,50);
+  initiateValues();
+  UI();
+}
+
+void draw(){
+  background(50);
+  
+  if(record){
+    beginRaw(DXF,"output.dxf") ;
+  }
+  
+  initiateValues();
+  drawCylinder();
+ 
+ if(record){
+   endRaw();
+   record=false;
+ }
+  UIShow();
+}
+
+void initiateValues() {
+  for (int  i =0; i < heightSection+1; i ++) {
+    sectionR[i] = 50+ 30 * sin((sectionRadiusPhase/heightSection) * i);
+    sectionTwistPhase[i] = twistPhase * cos((twistPhaseStart/5/heightSection) * i);
+  }
+}
+
+void drawCylinder() {
+  float theta = TWO_PI / sectionSideNum;
+
+  beginShape(TRIANGLES);
+  for (int j = 0; j < heightSection; j ++) {
+    for (int i = 0; i < sectionSideNum; i ++) {
+      float x11 = sectionR[j] * cos(theta * i + sectionTwistPhase[j]);
+      float y11 = sectionR[j] * sin(theta * i + sectionTwistPhase[j]);
+      float x12 = sectionR[j] * cos(theta * ((i+1)%sectionSideNum) + sectionTwistPhase[j]);
+      float y12 = sectionR[j] * sin(theta * ((i+1)%sectionSideNum) + sectionTwistPhase[j]);
+
+      float x21 = sectionR[j+1] * cos(theta * i + sectionTwistPhase[j+1]);
+      float y21 = sectionR[j+1] * sin(theta * i + sectionTwistPhase[j+1]);
+      float x22 = sectionR[j+1] * cos(theta * ((i+1)%sectionSideNum) + sectionTwistPhase[j+1]);
+      float y22 = sectionR[j+1] * sin(theta * ((i+1)%sectionSideNum) + sectionTwistPhase[j+1]);
+
+
+      float deltaX12 = (x12 - x11) / sideDivision;
+      float deltay12 = (y12 - y11) / sideDivision;
+      float deltaX22 = (x22 - x21) / sideDivision;
+      float deltay22 = (y22 - y21) / sideDivision;
+
+      for (int k = 0; k < sideDivision; k ++) {
+        vertex(x11 + deltaX12 * k, y11 + deltay12 * k, layerHeight * j);
+        vertex(x21 + deltaX22 * (k+1), y21 + deltay22 * (k+1), layerHeight * (j+1));
+        vertex(x11 + deltaX12 * (k+1), y11 + deltay12 * (k+1), layerHeight * j);
+
+        vertex(x11 + deltaX12 * k, y11 + deltay12 * k, layerHeight * j);
+        vertex(x21 + deltaX22 * k, y21 + deltay22 * k, layerHeight * (j+1));
+        vertex(x21 + deltaX22 * (k+1), y21 + deltay22 * (k+1), layerHeight * (j+1));
+      }
+    }
+  }
+  endShape();
+}
+
+void keyPressed(){
+  if(key=='s'){
+    record=true;
+  }
+}
