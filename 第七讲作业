@@ -1,0 +1,111 @@
+ArrayList<Agent> agents;
+int totalNum = 2000;
+int order = 0;
+int index = 1;
+
+void setup(){
+  size(800,800);
+  initiateCore();
+}
+
+void draw(){
+  background(0);
+  addAgents();
+  
+  for (Agent a : agents) {
+    PVector s = PVector.random2D().mult(4);
+    a.update(s);
+  }
+  
+  fill(255);
+  text(index,20,20);
+}
+
+void initiateCore() {
+  agents = new ArrayList<Agent>();
+  agents.add(new Agent(new PVector(width/2, height/2), 0));
+}
+
+void addAgents(){
+  if(mousePressed){
+      if (index < totalNum) {
+        agents.add(new Agent(new PVector(mouseX+random(-5,5),mouseY+random(-5,5)),index));
+        index ++;
+      }
+  }
+}
+
+class Agent {
+  PVector location;
+  float diameter = 10;
+  boolean agentTouch;
+  PVector speed;
+  PVector center;
+  int agentIndex;
+  int agentOrder = 0;
+ 
+  ArrayList<PVector> pair;
+
+  Agent(PVector loc, int i) {
+    location = loc;
+    agentIndex = i;  
+    pair = new ArrayList<PVector>();
+    center = new PVector(width/2, height/2);
+  }
+
+  void update(PVector s) {
+    touch();
+    move(s);
+    show();
+    drawConnection();
+  }
+
+  void move(PVector speed_) {
+    if (agentTouch) {
+      speed = new PVector(0, 0);
+    } else {
+        speed = speed_;
+        speed.add(PVector.sub(center, location).normalize().mult(2));
+      }
+    location.add(speed);
+  }
+
+  void show() {
+      noStroke();
+      if (agentTouch) {
+        fill(255,100);
+      } else {
+        fill(255);
+      }
+    ellipse(location.x, location.y, diameter, diameter); 
+  }
+
+  void touch() {
+   agents.get(0).agentTouch = true;
+  
+    for (Agent a : agents) {
+      if (this != a && a.agentTouch && !this.agentTouch) {
+        float dd = PVector.dist(this.location, a.location);
+        if (dd <= (this.diameter+a.diameter)/2) {
+          this.agentTouch = true;
+          pair.add(new PVector(this.agentIndex, a.agentIndex));
+          order ++;
+          agentOrder = order + 1;
+        } else {
+         this.agentTouch = false;
+        }
+       }
+    }
+  }
+
+  void drawConnection() {
+    if (pair != null) {
+      for (PVector p : pair) {
+        stroke(255);
+        strokeWeight(2);
+        line(agents.get((int)p.x).location.x, agents.get((int)p.x).location.y, 
+        agents.get((int)p.y).location.x, agents.get((int)p.y).location.y);
+      }
+    }
+  }
+}
