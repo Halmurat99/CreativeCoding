@@ -1,0 +1,330 @@
+int lifetime;
+int lifecycle;
+
+Population population;
+
+int recordtime;
+
+Obstacle food;
+ArrayList<Obstacle>obstacles;
+PVector obstacleNew;
+
+void setup(){
+  size(1000,500);
+  lifetime=500;
+  lifecycle=0;
+  recordtime=lifetime;
+  
+  food = new Obstacle(900, 50, 20, 20);
+  food.setColorFill( #226646 );
+  
+  float mutationRate=0.01;
+  population=new Population(mutationRate,50);
+  
+  obstacles=new ArrayList<Obstacle>();
+  obstacleNew=new PVector(0,0,0);
+  
+}
+
+void draw(){
+  background(255);
+  
+  food.display();
+  
+  if (lifecycle < lifetime) {
+    population.live(obstacles);
+    if ((population.targetReached()) && (lifecycle < recordtime)) {
+      recordtime = lifecycle;
+    }
+    lifecycle++;
+  } 
+  else {
+    lifecycle = 0;
+    population.fitness();
+    population.selection();
+    population.reproduction();
+  }
+  
+  for (Obstacle obs : obstacles) {
+    obs.display();
+  }
+  
+  if( obstacleNew.z == 1 ){
+    if( mousePressed ){
+       rectMode(CORNER);
+       fill(0);
+       rect(obstacleNew.x, obstacleNew.y, mouseX-obstacleNew.x, mouseY-obstacleNew.y);
+    }
+    else{
+      obstacleNew.z = 0;
+      obstacles.add(new Obstacle(obstacleNew.x, obstacleNew.y, mouseX-obstacleNew.x, mouseY-obstacleNew.y));
+    }
+  }
+  
+  fill(0);
+  textSize(30);
+  text("Generation : " + population.getGenerations(), 10, 30);
+}
+
+class DNA {
+  PVector[] genes;
+  float maxforce = 0.1;
+  
+  DNA() {
+    genes = new PVector[lifetime];
+    for (int i = 0; i < genes.length; i++) {
+      genes[i] = PVector.random2D();
+      genes[i].mult(random(0, maxforce));
+    }
+    genes[0].normalize();
+  }
+
+  DNA(PVector[] newgenes) {
+    genes = newgenes;
+  }
+
+  DNA crossover(DNA partner) {
+    PVector[]child = new PVector[genes.length];
+    int midpoint = int(random(genes.length));
+    for (int i = 0; i < genes.length; i++) {
+      if (i > midpoint) child[i] = genes[i];
+      else              child[i] = partner.genes[i];
+    }    
+    DNA newgenes=new DNA(child);
+    return newgenes;
+  }
+
+  void mutate(float m) {
+    for (int i = 0; i < genes.length; i++) {
+      if (random(1) < m) {
+        genes[i] = PVector.random2D();
+        genes[i].mult(random(0, maxforce));
+        if(i==0)genes[i].normalize();
+      }
+    }
+  }
+}
+
+class Population {
+  float mutationRate;
+  Ant[] population;
+  ArrayList<Ant> matingPool;
+  int generations; 
+  
+  Population(float m, int num) {
+    mutationRate = m;
+    population = new Ant[num];
+    matingPool = new ArrayList<Ant>();
+    generations = 0;
+
+    for (int i = 0; i < population.length; i++) {
+      PVector position = new PVector(0,height);
+      population[i] = new Ant(position, new DNA(),population.length);
+     }
+  }
+
+  void live (ArrayList<Obstacle> os) {
+    for (int i = 0; i < population.length; i++) {
+      population[i].checkTarget();
+      population[i].run(os);
+    }
+  }
+
+  boolean targetReached() {
+    for (int i = 0; i < population.length; i++) {
+      if (population[i].findFood) return true;
+    }
+    return false;
+  }
+
+  void fitness() {
+    for (int i = 0; i < population.length; i++) {
+      population[i].fitness();
+    }
+  }
+
+  void selection() {
+    matingPool.clear();
+   float maxFitness=getMaxFitness();
+    for (int i = 0; i < population.length; i++) {
+      float fitnessNormal = map(population[i].getFitness(),0,maxFitness,0,1);
+      int n = (int) (fitnessNormal* 100); 
+      for (int j = 0; j < n; j++) {
+        matingPool.add(population[i]);
+      }  
+    }
+  }
+
+  void reproduction() {
+    for (int i = 0; i < population.length; i++) {
+      int a = int(random(matingPool.size()));
+      int b = int(random(matingPool.size()));
+      Ant mom = matingPool.get(a);
+      Ant dad = matingPool.get(b);
+      DNA momgenes = mom.getDNA();
+      DNA dadgenes = dad.getDNA();
+      DNA child = momgenes.crossover(dadgenes);
+      child.mutate(mutationRate);
+      PVector position = new PVector(0,height);
+      population[i] = new Ant(position, child,population.length);
+    }
+    generations++;
+  }
+  
+  float getMaxFitness() {
+    float record = 0;
+    for (int i = 0; i < population.length; i++) {
+       if(population[i].getFitness() > record) {
+         record = population[i].getFitness();
+       }
+    }
+    return record;
+  }
+  
+  int getGenerations() {
+    return generations;
+  }     
+}
+
+class Obstacle {
+  PVector position;
+  float w,h;
+  color colorfill;
+  
+  Obstacle(float x, float y, float w_, float h_) {
+    position = new PVector(x,y);
+    w = w_;
+    h = h_;
+    colorfill = 0;
+  }
+
+  void display() {
+    noStroke();
+    fill(colorfill);
+    rectMode(CORNER);
+    rect(position.x,position.y,w,h);
+  }
+
+  boolean contains(PVector v) {
+    if (v.x > position.x && v.x < position.x + w && v.y > position.y && v.y < position.y + h) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
+  void setColorFill( color fill_ ) {
+    colorfill = fill_;
+  }
+}
+
+class Ant {
+  PVector position;
+  PVector velocity;
+  PVector acceleration;
+  
+  float r;
+  float recordDist;
+  float fitness;
+ 
+  DNA dna;
+
+  int geneCounter = 0;
+
+  boolean hitObstacle = false;
+  boolean findFood = false;
+  int finishTime;
+
+  Ant(PVector p, DNA dna_, int totalAnts) {
+    acceleration = new PVector();
+    velocity = new PVector();
+    position = p.get();
+    r = 10;
+    dna = dna_;
+    finishTime = 0;
+    recordDist = width/2;
+  }
+
+  void run(ArrayList<Obstacle> os) {
+    if (!hitObstacle && !findFood) {
+      applyForce(dna.genes[geneCounter]);
+      geneCounter = (geneCounter + 1) % dna.genes.length;
+      update();
+      obstacles(os);
+    }
+    if (!hitObstacle) {
+      display();
+    }
+  }
+
+  void checkTarget() {
+    float d = dist(position.x, position.y, food.position.x, food.position.y);
+    if (d < recordDist) recordDist = d;
+    
+    if (food.contains(position) && !findFood) {
+      findFood = true;
+    } else if (!findFood) {
+      finishTime++;
+    }
+  }
+  
+  void fitness() {
+    if (recordDist < 1) recordDist = 1;
+    fitness = (1/(finishTime*recordDist));
+    fitness = pow(fitness, 2);
+    if (hitObstacle) fitness *= 0.1; 
+    if (findFood) fitness *= 2; 
+  }
+
+  void obstacles(ArrayList<Obstacle> os) {
+    for (Obstacle obs : os) {
+      if (obs.contains(position)) {
+        hitObstacle = true;
+      }
+    }
+  }
+
+  void applyForce(PVector f) {
+    acceleration.add(f).mult(2);
+  }
+
+  void update() {
+    velocity.add(acceleration);
+    position.add(velocity);
+    acceleration.mult(0);   
+  }
+
+  void display() {
+    stroke(0);
+    strokeWeight(1);  
+    pushMatrix();
+    translate(position.x, position.y);
+    fill(158, 25, 25);
+    ellipse(0,0,r,r);
+    popMatrix();
+  }
+
+  float getFitness() {
+    return fitness;
+  }
+
+  DNA getDNA() {
+    return dna;
+  }
+
+  boolean stopped() {
+    return hitObstacle;
+  }
+}
+
+void mousePressed() {
+  if ( mouseButton == LEFT) {
+    food.position.x = mouseX;
+    food.position.y = mouseY;
+    recordtime = lifetime;
+  } else if ( mouseButton == RIGHT ) {
+    obstacleNew.x = mouseX;
+    obstacleNew.y = mouseY;
+    obstacleNew.z = 1;
+  } 
+}
