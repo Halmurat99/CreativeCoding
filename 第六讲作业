@@ -1,0 +1,94 @@
+int cellSize=5;
+int[][]cells;
+
+color virus=color(27, 112, 61);
+color healthy=color(255);
+color survior=color(255, 183, 197);
+
+float infect=0.2;
+float treatmentRate=0.3;
+
+int Healthy=0;
+int Infected=1;
+int Vaccine=2;
+
+void setup() {
+  size (800, 800);
+  frameRate(5);
+  noStroke();
+  
+  cells = new int[width/cellSize][height/cellSize];
+  for (int x=0; x<width/cellSize; x++) {
+    for (int y=0; y<height/cellSize; y++) {
+      cells[x][y] = Healthy; 
+    }
+  }
+  int Virus_x=int(random(width/cellSize));
+  int Virus_y=int(random(height/cellSize));
+  cells[Virus_x][Virus_y]=Infected;
+  background(255); 
+}
+
+
+void draw() {
+  update();
+  cure();
+  for (int x=0; x<width/cellSize; x++) {
+    for (int y=0; y<height/cellSize; y++) {
+      if (cells[x][y]==Infected) {
+        fill(virus); 
+      }
+      else if(cells[x][y]==Healthy){
+        fill(healthy); 
+      }
+      else if(cells[x][y]==Vaccine){
+        fill(survior); 
+      }
+      rect (x*cellSize, y*cellSize, cellSize, cellSize);
+    }
+  }
+}
+
+void update(){
+  int x,y,cell;
+  for(x=1;x<width/cellSize-1;x++){
+    for(y=1;y<height/cellSize-1;y++){
+      
+      cell=cells[x][y];
+      
+      if(cell==Healthy){
+        if(cells[x-1][y-1]==1||cells[x-1][y]==1||cells[x-1][y+1]==1||cells[x][y-1]==1||cells[x][y+1]==1||cells[x+1][y-1]==1||cells[x+1][y]==1||cells[x+1][y+1]==1){
+          if(random(1)<infect){
+            cell=1;
+          }
+        }
+        cells[x][y]=cell;
+      }
+    }
+  }
+}
+
+void mousePressed(){
+  int Vaccine_x=int(random(width/cellSize));
+  int Vaccine_y=int(random(height/cellSize));
+  cells[Vaccine_x][Vaccine_y]=Vaccine;
+}
+
+void cure(){
+  int x,y,ceLL;
+  for(x=1;x<width/cellSize-1;x++){
+    for(y=1;y<height/cellSize-1;y++){
+      
+      ceLL=cells[x][y];
+      
+      if(ceLL==Infected){
+        if(cells[x-1][y-1]==2||cells[x-1][y]==2||cells[x-1][y+1]==2||cells[x][y-1]==2||cells[x][y+1]==2||cells[x+1][y-1]==2||cells[x+1][y]==2||cells[x+1][y+1]==2){
+          if(random(1)<treatmentRate){
+            ceLL=2;
+          }
+        }
+        cells[x][y]=ceLL;
+      }
+    }
+  }
+}
